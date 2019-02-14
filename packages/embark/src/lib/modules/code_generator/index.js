@@ -198,6 +198,7 @@ class CodeGenerator {
     return block;
   }
 
+
   generateCustomContractCode(contract) {
     const customContractGeneratorPlugin = this.plugins.getPluginsFor('customContractGeneration').splice(-1)[0];
     if (!customContractGeneratorPlugin) {
@@ -293,14 +294,9 @@ class CodeGenerator {
     let embarkjsCode = "import EmbarkJS from 'embarkjs';";
     embarkjsCode += "\nexport default EmbarkJS;";
     embarkjsCode += "\nglobal.EmbarkJS = EmbarkJS";
-    let code = "";
+    let code = "/* eslint-disable */";
 
     async.waterfall([
-      function getImports(next) {
-        code += "\nimport IpfsApi from 'ipfs-api';\n";
-
-        next();
-      },
       function getJSCode(next) {
         code += "\n" + embarkjsCode + "\n";
 
@@ -309,6 +305,7 @@ class CodeGenerator {
         code += self.generateStorageInitialization(true);
         code += self.generateNamesInitialization(true);
         code += self.getReloadPageCode();
+        code += '\n/* eslint-enable */';
 
         next();
       },
@@ -352,7 +349,7 @@ class CodeGenerator {
   }
 
   buildContractJS(contractName, contractJSON, cb) {
-    let contractCode = "import EmbarkJS from 'Embark/EmbarkJS';\n";
+    let contractCode = "import EmbarkJS from '../embarkjs';\n";
     contractCode += `let ${contractName}JSONConfig = ${JSON.stringify(contractJSON)};\n`;
     contractCode += `let ${contractName} = new EmbarkJS.Blockchain.Contract(${contractName}JSONConfig);\n`;
 

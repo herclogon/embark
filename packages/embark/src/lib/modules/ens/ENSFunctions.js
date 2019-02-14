@@ -1,4 +1,4 @@
-const namehash = require('eth-ens-namehash');
+/*global namehash*/
 // Price of ENS registration contract functions
 const ENS_GAS_PRICE = 700000;
 

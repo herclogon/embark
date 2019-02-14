@@ -366,23 +366,19 @@ class ENS {
   }
 
   addENSToEmbarkJS() {
-    const self = this;
-
-    // get namehash, import it into file
-    self.events.request("version:get:eth-ens-namehash", function (EnsNamehashVersion) {
-      let currentEnsNamehashVersion = require('../../../../package.json').dependencies["eth-ens-namehash"];
-      if (EnsNamehashVersion !== currentEnsNamehashVersion) {
-        self.events.request("version:getPackageLocation", "eth-ens-namehash", EnsNamehashVersion, function (err, location) {
-          self.embark.registerImportFile("eth-ens-namehash", self.fs.dappPath(location));
-        });
+    this.events.request('version:downloadIfNeeded', 'eth-ens-namehash', (err, location) => {
+      if (err) {
+        this.logger.error(_('Error downloading NameHash'));
+        return this.logger.error(err.message || err);
       }
+
+      let code = `\nconst namehash = require("${location}");\n`;
+      code += this.fs.readFileSync(utils.joinPath(__dirname, 'ENSFunctions.js')).toString();
+      code += "\n" + this.fs.readFileSync(utils.joinPath(__dirname, 'embarkjs.js')).toString();
+      code += "\nEmbarkJS.Names.registerProvider('ens', __embarkENS);";
+
+      this.embark.addCodeToEmbarkJS(code);
     });
-
-    let code = self.fs.readFileSync(utils.joinPath(__dirname, 'ENSFunctions.js')).toString();
-    code += "\n" + self.fs.readFileSync(utils.joinPath(__dirname, 'embarkjs.js')).toString();
-    code += "\nEmbarkJS.Names.registerProvider('ens', __embarkENS);";
-
-    this.embark.addCodeToEmbarkJS(code);
   }
 
   addSetProvider(config) {

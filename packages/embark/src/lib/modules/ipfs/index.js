@@ -20,7 +20,6 @@ class IPFS {
     this.blockchainConfig = embark.config.blockchainConfig;
 
     if (this.isIpfsStorageEnabledInTheConfig()) {
-      this.downloadIpfsApi();
       this.setServiceCheck();
       this.addStorageProviderToEmbarkJS();
       this.addObjectToConsole();
@@ -42,16 +41,17 @@ class IPFS {
     }
   }
 
-  downloadIpfsApi() {
-    const self = this;
-
-    self.events.request("version:get:ipfs-api", function(ipfsApiVersion) {
+  downloadIpfsApi(cb) {
+    this.events.request("version:get:ipfs-api", (ipfsApiVersion) => {
       let currentIpfsApiVersion = require('../../../../package.json').dependencies["ipfs-api"];
-      if (ipfsApiVersion !== currentIpfsApiVersion) {
-        self.events.request("version:getPackageLocation", "ipfs-api", ipfsApiVersion, function(err, location) {
-          self.embark.registerImportFile("ipfs-api", self.fs.dappPath(location));
-        });
+      if (ipfsApiVersion === currentIpfsApiVersion) {
+        const nodePath = this.fs.embarkPath('node_modules');
+        const ipfsPath = require.resolve("ipfs-api", {paths: [nodePath]});
+        return cb(null, ipfsPath);
       }
+      this.events.request("version:getPackageLocation", "ipfs-api", ipfsApiVersion, (err, location) => {
+        cb(err, this.fs.dappPath(location));
+      });
     });
   }
 
@@ -100,11 +100,18 @@ class IPFS {
   }
 
   addStorageProviderToEmbarkJS() {
-    let code = "";
-    code += "\n" + this.fs.readFileSync(utils.joinPath(__dirname, 'embarkjs.js')).toString();
-    code += "\nEmbarkJS.Storage.registerProvider('ipfs', __embarkIPFS);";
+    this.events.request('version:downloadIfNeeded', 'ipfs-api', (err, location) => {
+      if (err) {
+        this.logger.error(__('Error downloading IPFS API'));
+        return this.logger.error(err.message || err);
+      }
+      location = location.replace(/\\/g, '/');
+      let code = `\nconst IpfsApi = require("${location}");`;
+      code += "\n" + this.fs.readFileSync(utils.joinPath(__dirname, 'embarkjs.js')).toString();
+      code += "\nEmbarkJS.Storage.registerProvider('ipfs', __embarkIPFS);";
 
-    this.embark.addCodeToEmbarkJS(code);
+      this.embark.addCodeToEmbarkJS(code);
+    });
   }
 
   addObjectToConsole() {
