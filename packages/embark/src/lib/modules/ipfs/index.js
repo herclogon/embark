@@ -105,7 +105,6 @@ class IPFS {
         this.logger.error(__('Error downloading IPFS API'));
         return this.logger.error(err.message || err);
       }
-      location = location.replace(/\\/g, '/');
       let code = `\nconst IpfsApi = require("${location}");`;
       code += "\n" + this.fs.readFileSync(utils.joinPath(__dirname, 'embarkjs.js')).toString();
       code += "\nEmbarkJS.Storage.registerProvider('ipfs', __embarkIPFS);";

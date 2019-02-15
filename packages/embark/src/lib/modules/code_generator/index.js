@@ -291,12 +291,22 @@ class CodeGenerator {
 
   buildEmbarkJS(cb) {
     const self = this;
-    let embarkjsCode = "import EmbarkJS from 'embarkjs';";
-    embarkjsCode += "\nexport default EmbarkJS;";
-    embarkjsCode += "\nglobal.EmbarkJS = EmbarkJS";
+    let embarkjsCode = '';
     let code = "/* eslint-disable */";
 
     async.waterfall([
+      function getEmbarkJsLocation(next) {
+        self.events.request('version:downloadIfNeeded', 'embarkjs', (err, location) => {
+          if (err) {
+            this.logger.error(__('Error downloading EmbarkJS'));
+            return next(err);
+          }
+          embarkjsCode += `\nconst EmbarkJS = require("${location}").default;`;
+          embarkjsCode += "\nexport default EmbarkJS;";
+          embarkjsCode += "\nglobal.EmbarkJS = EmbarkJS";
+          next();
+        });
+      },
       function getJSCode(next) {
         code += "\n" + embarkjsCode + "\n";
 
