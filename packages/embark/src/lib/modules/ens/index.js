@@ -294,7 +294,7 @@ class ENS {
   registerSubDomain(defaultAccount, subDomainName, reverseNode, address, secureSend, cb) {
     this.events.request("blockchain:get", (web3) => {
       ENSFunctions.registerSubDomain(web3, this.ensContract, this.registrarContract, this.resolverContract, defaultAccount,
-        subDomainName, this.registration.rootDomain, reverseNode, address, this.logger, secureSend, cb);
+        subDomainName, this.registration.rootDomain, reverseNode, address, this.logger, secureSend, cb, namehash);
     });
   }
 
@@ -320,7 +320,7 @@ class ENS {
       (req, res) => {
         async.waterfall([
           function (callback) {
-            ENSFunctions.resolveName(req.query.name, self.ensContract, createInternalResolverContract.bind(self), callback);
+            ENSFunctions.resolveName(req.query.name, self.ensContract, createInternalResolverContract.bind(self), callback, namehash);
           }
         ], function (error, address) {
           if (error) {
